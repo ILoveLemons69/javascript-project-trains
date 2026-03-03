@@ -9,37 +9,16 @@ let index_from
 let index_where
 let index_date
 let index_passanger
-let purchase_number1
-let purchase_number2
-let purchase_number3
-let purchase_name1
-let purchase_name2
-let purchase_name3
-let purchase_departure1
-let purchase_departure2
-let purchase_departure3
-let purchase_arrive1
-let purchase_arrive2
-let purchase_arrive3
-let purchase_from1
-let purchase_from2
-let purchase_from3
-let purchase_to1
-let purchase_to2
-let purchase_to3
-let purchase_id1
-let purchase_id2
-let purchase_id3
-let id
+let totalPrice = 0;
+const totalPriceEl = document.getElementById("total_price");
+
 
 addEventListener("DOMContentLoaded", async () => {
     if (cards) {
         await getFilteredTrains();
     }
 
-    if (card) {
-        await console.log(id)
-    }
+
 })
 
 function values(){
@@ -96,35 +75,11 @@ async function getFilteredTrains() {
                         <h6 class="where_place">${places.to}</h6>
                     </div>
                     <div>
-                        <br><button class="btn_buy" id="${number}" onclick="c${number}()"><span>დაჯავშნა</span></button>
+                        <br><button class="btn_buy" onclick="goCheckout('${places.id}')"><span>დაჯავშნა</span></button>
                     </div>
                 </div>
             `;
-            if(number == 1) {
-                purchase_arrive1 = places.arrive
-                purchase_departure1 = places.departure
-                purchase_id1 = number
-                purchase_to1 = places.to
-                purchase_from1 = places.from
-                purchase_name1 = places.name
-                purchase_number1 = places.number
-            } else if(number == 2) {
-                purchase_arrive2 = places.arrive
-                purchase_departure2 = places.departure
-                purchase_id2 = number
-                purchase_to2 = places.to
-                purchase_from2 = places.from
-                purchase_name2 = places.name
-                purchase_number2 = places.number
-            } else {
-                purchase_arrive3 = places.arrive
-                purchase_departure3 = places.departure
-                purchase_id3 = number
-                purchase_to3 = places.to
-                purchase_from3 = places.from
-                purchase_name3 = places.name
-                purchase_number3 = places.number
-            }
+
             number = number + 1
         }
     }
@@ -181,17 +136,158 @@ if (btn_submit) {
     });
 }
 
-function c1() {
-    id = 1;
-    window.location.href = "checkout.html?id=1";
+function goCheckout(trainId) {
+    const params = new URLSearchParams(window.location.search);
+    const passangers = params.get("passangers");
+
+    window.location.href = `checkout.html?id=${trainId}&passangers=${passangers}`;
 }
 
-function c2() {
-    id = 2;
-    window.location.href = "checkout.html?id=2";
+addEventListener("DOMContentLoaded", async () => {
+
+    if (!card) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const passangers = parseInt(params.get("passangers"));
+
+    if (!id) {
+        card.innerHTML = "<h2>No train selected</h2>";
+        return;
+    }
+
+    try {
+        const response = await fetch(`https://railway.stepprojects.ge/api/trains/${id}`);
+
+        if (!response.ok) {
+            throw new Error("Train not found");
+        }
+
+        const train = await response.json();
+
+        card.innerHTML = `
+        <div class="card">
+            <div class="no_dash">
+                <h6 class="number">${train.number}</h6>
+                <h6 class="name">${train.name} Express</h6>
+            </div>
+            <div>
+                <h6 class="from_time">${train.departure}</h6>
+                <h6 class="from_place">${train.from}</h6>
+            </div>
+            <div>
+                <h6 class="where_time">${train.arrive}</h6>
+                <h6 class="where_place">${train.to}</h6>
+            </div>
+        </div>
+        `;
+
+        for (let i = 1; i <= passangers; i++) {
+            card_passangers.innerHTML += `
+            <h1>მგზავრი ${i}</h1><br><br>
+            <div class="card_passanger">
+                <span class="background">ადგილი: 0</span>
+                <input type="text" required placeholder="სახელი">
+                <input type="text" required placeholder="გვარი">
+                <input type="text" required placeholder="პირადი ნომერი">
+                <div><br><button type="button" class="select_class_btn"><span>დაჯავშნა</span></button></div>
+            </div><br><br><br>
+            `;
+        }
+        
+        const classButtons = document.querySelectorAll(".select_class_btn");
+
+        classButtons.forEach((btn, index) => {
+            btn.addEventListener("click", () => {
+                Swal.fire({
+                    title: 'აირჩიეთ კლასი',
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: 'I კლასი',
+                    denyButtonText: 'II კლასი',
+                    cancelButtonText: 'ბიზნეს კლასი',
+                }).then((result) => {
+                    let selectedClass = "";
+                    if(result.isConfirmed) selectedClass = "I";
+                    else if(result.isDenied) selectedClass = "II";
+                    else if(result.isDismissed) selectedClass = "ბიზნეს";
+
+                    if(selectedClass) {
+                        btn.previousElementSibling.textContent = `კლასი: ${selectedClass}`;
+                        showSeatModal(selectedClass, index);
+                    }
+                });
+            });
+        });
+
+    } catch (error) {
+        card.innerHTML = "<h2>Something went wrong</h2>";
+    }
+});
+
+let occupiedSeatsByClass = {
+    "I": [],
+    "II": [],
+    "ბიზნეს": []
+};
+
+const classPrices = {
+    "I": 35,
+    "II": 75,
+    "ბიზნეს": 125
+};
+
+function showSeatModal(selectedClass, passengerIndex) {
+    const rows = ["A", "B", "C", "D"];
+    const cols = 10;
+    let seatHtml = "";
+
+    rows.forEach(row => {
+        seatHtml += `<div style="display:flex; justify-content:center; margin-bottom:5px;">`;
+        for (let i = 1; i <= cols; i++) {
+            const seatCode = `${row}${i}`;
+            const isOccupied = occupiedSeatsByClass[selectedClass].includes(seatCode);
+            seatHtml += `<button class="seat-btn" 
+                                style="
+                                    background-color:${isOccupied ? '#e74c3c' : '#3498db'};
+                                    color:white; border:none; border-radius:5px; 
+                                    width:40px; height:40px; margin:2px; cursor:${isOccupied ? 'not-allowed' : 'pointer'};
+                                "
+                                ${isOccupied ? "disabled" : ""}
+                                >${seatCode}</button>`;
+        }
+        seatHtml += `</div>`;
+    });
+
+    Swal.fire({
+        title: `აირჩიეთ ადგილი - ${selectedClass} (${classPrices[selectedClass]}₾)`,
+        html: `<div>${seatHtml}</div>
+               <br><img src="./imgs/train-inside-image.png" style="width:100%; max-width:300px;">`,
+        showConfirmButton: false,
+        didOpen: () => {
+            const seatButtons = Swal.getHtmlContainer().querySelectorAll(".seat-btn");
+            seatButtons.forEach(button => {
+                if (!button.disabled) {
+                    button.addEventListener("click", () => {
+                        const passengerCards = document.querySelectorAll(".card_passanger .background");
+                        if(passengerCards[passengerIndex]) {
+
+                            const oldPriceMatch = passengerCards[passengerIndex].textContent.match(/\d+₾$/);
+                            if(oldPriceMatch) totalPrice -= parseInt(oldPriceMatch[0]);
+
+                            passengerCards[passengerIndex].textContent = 
+                                `ადგილი: ${button.textContent} (${selectedClass}) - ${classPrices[selectedClass]}₾`;
+
+                            totalPrice += classPrices[selectedClass];
+                            const totalPriceEl = document.getElementById("total_price");
+                            if(totalPriceEl) totalPriceEl.textContent = `${totalPrice}₾`;
+                        }
+                        occupiedSeatsByClass[selectedClass].push(button.textContent);
+                        Swal.close();
+                    });
+                }
+            });
+        }
+    });
 }
 
-function c3() {
-    id = 3;
-    window.location.href = "checkout.html?id=3";
-}

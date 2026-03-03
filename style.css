@@ -253,6 +253,14 @@ html .checkout main section .card div h6 {
   margin-top: 20px;
   margin-bottom: 20px;
 }
+html .checkout main form .purchase_btn {
+  padding: 12px;
+  background-color: rgb(27, 27, 255);
+  color: white;
+  font-weight: 700;
+  border: 1px solid rgb(201, 199, 199);
+  border-radius: 4px;
+}
 html .checkout main form .inp_first {
   width: 20vw;
   margin: 10px;

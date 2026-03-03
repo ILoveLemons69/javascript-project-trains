@@ -27,7 +27,7 @@
         <section>
             <h1 class="title">შეიყვანეთ თქვენი ინფორმაცია</h1>
             <br><hr><br><br>
-            <div id="card" onclick="">
+            <div id="card">
                 <!-- <div class="card">
                     <div class="no_dash">
                         <h6 class="number">${places.number}</h6>
@@ -63,8 +63,10 @@
                 </div>
                 <div>
                     <h1>გადახდა</h1>
-                    <h2>ფასი: </h2>
-                    <button type="submit">გადახდა</button>
+                    <h2>ფასი: <span id="total_price">0</span></h2>
+                    <br><br><br>
+                    <button type="submit" class="purchase_btn" id="buy_btn">გადახდა</button>
+                    <br><br><br><br><br><br>
                 </div>
             </form>
         </section>
